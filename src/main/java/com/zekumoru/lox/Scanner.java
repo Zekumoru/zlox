@@ -82,18 +82,7 @@ class Scanner {
                     while (peek() != '\n' && !isAtEnd()) advance();
                 } else if (match('*')) {
                     // Block comment: consume until we find "*/".
-                    while (!(peek() == '*' && peekNext() == '/') && !isAtEnd()) {
-                        if (peek() == '\n') line++;
-                        advance();
-                    }
-
-                    if (isAtEnd()) {
-                        Lox.error(line, "Unterminated block comment.");
-                    } else {
-                        // Consume the closing */.
-                        advance(); // '*'
-                        advance(); // '/'
-                    }
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
@@ -160,6 +149,38 @@ class Scanner {
         addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
     }
 
+    private void blockComment() {
+        int depth = 1; // Support nested block comments.
+
+        while (depth > 0 && !isAtEnd()) {
+            if (peek() == '\n') {
+                line++;
+                advance();
+                continue;
+            }
+
+            // Detect a nested opener /*.
+            if (peek() == '/' && peekNext() == '*') {
+                advanceNext();
+                depth++;
+                continue;
+            }
+
+            // Detect a closer */.
+            if (peek() == '*' && peekNext() == '/') {
+                advanceNext();
+                depth--;
+                continue;
+            }
+
+            advance();
+        }
+
+        if (depth > 0) {
+            Lox.error(line, "Unterminated block comment.");
+        }
+    }
+
     private boolean match(char expected) {
         if (isAtEnd()) return false;
         if (source.charAt(current) != expected) return false;
@@ -198,6 +219,11 @@ class Scanner {
 
     private char advance() {
         return source.charAt(current++);
+    }
+
+    private char advanceNext() {
+        current += 2;
+        return source.charAt(current - 1);
     }
 
     private void addToken(TokenType type) {
