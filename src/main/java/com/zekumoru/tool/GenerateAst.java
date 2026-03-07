@@ -75,7 +75,7 @@ public class GenerateAst {
     private static void defineType(
             PrintIndentWriter writer, String baseName,
             String className, String fieldList) {
-        writer.println("static class " + className + " extends " + baseName + " {");
+        writer.println("public static class " + className + " extends " + baseName + " {");
 
         // Fields.
         String[] fields = fieldList.split(", ");

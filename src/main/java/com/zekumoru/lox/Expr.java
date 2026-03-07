@@ -10,7 +10,7 @@ abstract class Expr {
         R visitUnaryExpr(Unary expr);
     }
     
-    static class Binary extends Expr {
+    public static class Binary extends Expr {
         final Expr left;
         final Token operator;
         final Expr right;
@@ -27,7 +27,7 @@ abstract class Expr {
         }
     }
     
-    static class Grouping extends Expr {
+    public static class Grouping extends Expr {
         final Expr expression;
         
         Grouping(Expr expression) {
@@ -40,7 +40,7 @@ abstract class Expr {
         }
     }
     
-    static class Literal extends Expr {
+    public static class Literal extends Expr {
         final Object value;
         
         Literal(Object value) {
@@ -53,7 +53,7 @@ abstract class Expr {
         }
     }
     
-    static class Unary extends Expr {
+    public static class Unary extends Expr {
         final Token operator;
         final Expr right;
         
