@@ -98,10 +98,13 @@ public class Interpreter implements Expr.Visitor<Object> {
     }
 
     private boolean isTruthy(Object object) {
-        // Ruby's truthy rule: false and nil are falsey, everything else is truthy.
-        if (object == null) return false;
-        if (object instanceof Boolean) return (boolean)object;
-        return true;
+        return switch (object) {
+            case null -> false;
+            case Boolean b -> (boolean) object;
+            case String s -> !s.isEmpty();
+            case Double v -> v != 0.0;
+            default -> true;
+        };
     }
 
     private boolean isEqual(Object a, Object b) {
