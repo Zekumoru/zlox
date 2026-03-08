@@ -27,18 +27,38 @@ public class Parser {
     }
 
     private Expr comma() {
-        Expr expr = equality();
+        Expr expr = conditional();
 
         while (match(COMMA)) {
             Token operator = previous();
-            Expr right = equality();
+            Expr right = conditional();
             expr = new Expr.Binary(expr, operator, right);
         }
 
         return expr;
     }
 
+    private Expr conditional() {
+        Expr expr = equality();
+
+        while (match(QUESTION)) {
+            Expr thenBranch = expression();
+            consume(COLON, "Expect ':' after then branch of conditional expression.");
+            Expr elseBranch = conditional();
+            expr = new Expr.Conditional(expr, thenBranch, elseBranch);
+        }
+
+        return expr;
+    }
+
     private Expr equality() {
+        if (match(BANG_EQUAL, EQUAL_EQUAL)) {
+            Token operator = previous();
+            Expr right = comparison();
+            error(operator, "Missing left-hand operand.");
+            return right;
+        }
+
         Expr expr = comparison();
 
         while (match(BANG_EQUAL, EQUAL_EQUAL)) {
@@ -51,6 +71,13 @@ public class Parser {
     }
 
     private Expr comparison() {
+        if (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            Token operator = previous();
+            Expr right = term();
+            error(operator, "Missing left-hand operand.");
+            return right;
+        }
+
         Expr expr = term();
 
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
@@ -63,6 +90,13 @@ public class Parser {
     }
 
     private Expr term() {
+        if (match(PLUS)) {
+            Token operator = previous();
+            Expr right = factor();
+            error(operator, "Missing left-hand operand.");
+            return right;
+        }
+
         Expr expr = factor();
 
         while (match(MINUS, PLUS)) {
@@ -75,6 +109,13 @@ public class Parser {
     }
 
     private Expr factor() {
+        if (match(SLASH, STAR)) {
+            Token operator = previous();
+            Expr right = unary();
+            error(operator, "Missing left-hand operand.");
+            return right;
+        }
+
         Expr expr = unary();
 
         while (match(SLASH, STAR)) {
@@ -111,7 +152,7 @@ public class Parser {
             return new Expr.Grouping(expr);
         }
 
-        throw error(peek(), "Expect expression");
+        throw error(peek(), "Expect expression.");
     }
 
     private boolean match(TokenType... types) {
