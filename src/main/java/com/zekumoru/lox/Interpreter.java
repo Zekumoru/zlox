@@ -19,16 +19,36 @@ public class Interpreter implements Expr.Visitor<Object> {
             case BANG_EQUAL: return !isEqual(left, right);
             case EQUAL_EQUAL: return isEqual(left, right);
             case GREATER:
-                checkNumberOperands(expr.operator, left, right);
+                checkComparisonOperands(expr.operator, left, right);
+
+                if (left instanceof String && right instanceof String) {
+                    return ((String) left).compareTo((String) right) > 0;
+                }
+
                 return (double)left > (double)right;
             case GREATER_EQUAL:
-                checkNumberOperands(expr.operator, left, right);
+                checkComparisonOperands(expr.operator, left, right);
+
+                if (left instanceof String && right instanceof String) {
+                    return ((String) left).compareTo((String) right) >= 0;
+                }
+
                 return (double)left >= (double) right;
             case LESS:
-                checkNumberOperands(expr.operator, left, right);
+                checkComparisonOperands(expr.operator, left, right);
+
+                if (left instanceof String && right instanceof String) {
+                    return ((String) left).compareTo((String) right) < 0;
+                }
+
                 return (double)left < (double)right;
             case LESS_EQUAL:
-                checkNumberOperands(expr.operator, left, right);
+                checkComparisonOperands(expr.operator, left, right);
+
+                if (left instanceof String && right instanceof String) {
+                    return ((String) left).compareTo((String) right) <= 0;
+                }
+
                 return (double)left <= (double) right;
             case MINUS:
                 checkNumberOperands(expr.operator, left, right);
@@ -90,6 +110,12 @@ public class Interpreter implements Expr.Visitor<Object> {
     private void checkNumberOperand(Token operator, Object operand) {
         if (operand instanceof Double) return;
         throw new RuntimeError(operator, "Operand must be a number");
+    }
+
+    private void checkComparisonOperands(Token operator, Object left, Object right) {
+        if (left instanceof Double && right instanceof Double) return;
+        if (left instanceof String && right instanceof String) return;
+        throw new RuntimeError(operator, "Operands must be two numbers or two strings.");
     }
 
     private void checkNumberOperands(Token operator, Object left, Object right) {
