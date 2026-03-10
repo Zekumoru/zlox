@@ -27,40 +27,114 @@ public class Lox {
 
     private static void runFile(String path) throws IOException {
         byte[] bytes = Files.readAllBytes(Paths.get(path));
-        List<Stmt> statements = parse(new String(bytes, Charset.defaultCharset()));
-        if (statements != null) interpreter.interpret(statements);
+        run(new String(bytes, Charset.defaultCharset()));
 
         // Indicate an error in the exit code.
         if (hadError) System.exit(65);
         if (hadRuntimeError) System.exit(70);
     }
 
-    private static void runPrompt() throws IOException {
-        InputStreamReader input = new InputStreamReader(System.in);
-        BufferedReader reader = new BufferedReader(input);
-
-        while (true) {
-            System.err.flush();
-            System.out.print("> ");
-            String line = reader.readLine();
-            if (line == null) break;
-            if (line.trim().equals("exit")) break;
-            List<Stmt> statements = parse(line);
-            if (statements != null) interpreter.interpretRepl(statements);
-            hadError = false;
-        }
-    }
-
-    private static List<Stmt> parse(String source) {
+    private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.
-        if (hadError) return null;
+        if (hadError) return;
 
-        return statements;
+        interpreter.interpret(statements);
+    }
+
+    private static void runPrompt() throws IOException {
+        InputStreamReader input = new InputStreamReader(System.in);
+        BufferedReader reader = new BufferedReader(input);
+        StringBuilder buffer = new StringBuilder();
+
+        while (true) {
+            System.out.print(buffer.isEmpty() ? "> " : "  ");
+            String line = reader.readLine();
+            if (line == null) break;
+            if (line.trim().equals("exit")) break;
+
+            buffer.append(line).append("\n");
+
+            if (!isCompleteSource(buffer.toString())) {
+                continue;
+            }
+
+            runRepl(buffer.toString());
+            buffer.setLength(0);
+            System.err.flush();
+            hadError = false;
+        }
+    }
+
+    private static void runRepl(String source) {
+        Scanner scanner = new Scanner(source);
+        List<Token> tokens = scanner.scanTokens();
+
+        maybeInsertImplicitSemicolon(tokens);
+
+        Parser parser = new Parser(tokens);
+        List<Stmt> statements = parser.parse();
+
+        // Stop if there was a syntax error.
+        if (hadError) return;
+
+        interpreter.interpretRepl(statements);
+    }
+
+    private static boolean isCompleteSource(String source) {
+        int parens = 0;
+        int braces = 0;
+        int brackets = 0;
+        boolean inString = false;
+
+        for (int i = 0; i < source.length(); i++) {
+            char c = source.charAt(i);
+
+            // Note that escape is not implemented yet.
+            if (c == '"') {
+                inString = !inString;
+                continue;
+            }
+
+            if (inString) continue;
+
+            switch (c) {
+                case '(': parens++; break;
+                case ')': parens--; break;
+                case '{': braces++; break;
+                case '}': braces--; break;
+                case '[': brackets++; break;
+                case ']': brackets--; break;
+            }
+        }
+
+        if (inString) return false;
+        if (parens > 0 || braces > 0 || brackets > 0) return false;
+
+        String trimmed = source.stripTrailing();
+        if (!trimmed.isEmpty()) {
+            char last = trimmed.charAt(trimmed.length() - 1);
+            return "+-*/=.".indexOf(last) == -1;
+        }
+
+        return true;
+    }
+
+    private static void maybeInsertImplicitSemicolon(List<Token> tokens) {
+        if (tokens.size() < 2) return;
+
+        Token secondLast = tokens.get(tokens.size() - 2);
+
+        if (secondLast.type == TokenType.SEMICOLON || secondLast.type == TokenType.RIGHT_BRACE) {
+            return;
+        }
+
+        Token semicolon = new Token(TokenType.SEMICOLON, ";", null, secondLast.line);
+        tokens.add(tokens.size() - 1, semicolon);
     }
 
     static void error(int line, String message) {
