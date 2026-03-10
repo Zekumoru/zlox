@@ -39,7 +39,11 @@ class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
-    void define(String name, Object value) {
-        values.put(name, value);
+    void define(Token name, Object value) {
+        if (values.containsKey(name.lexeme)) {
+            throw new RuntimeError(name, "'" + name.lexeme + "' is already defined.");
+        }
+
+        values.put(name.lexeme, value);
     }
 }
