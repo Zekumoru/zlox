@@ -235,6 +235,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         if (stmt.initializer != null) {
+            environment.declare(stmt.name);
             Object value = evaluate(stmt.initializer);
             environment.define(stmt.name, value);
         } else {

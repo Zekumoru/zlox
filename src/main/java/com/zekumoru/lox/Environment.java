@@ -4,7 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 class Environment {
+    // Used during initialization.
     private static final Object UNINITIALIZED = new Object();
+    // Used for declared only variables.
+    private static final Object UNDEFINED = new Object();
 
     final Environment enclosing;
     private final Map<String, Object> values = new HashMap<>();
@@ -22,6 +25,10 @@ class Environment {
             Object value = values.get(name.lexeme);
 
             if (value == UNINITIALIZED) {
+                throw new RuntimeError(name, "Cannot use '" + name.lexeme + "' before initialization.");
+            }
+
+            if (value == UNDEFINED) {
                 throw new RuntimeError(name, "Variable '" + name.lexeme + "' must be initialized before use.");
             }
 
@@ -47,12 +54,16 @@ class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
-    void define(Token name) {
+    void declare(Token name) {
         define(name, UNINITIALIZED);
     }
 
+    void define(Token name) {
+        define(name, UNDEFINED);
+    }
+
     void define(Token name, Object value) {
-        if (values.containsKey(name.lexeme)) {
+        if (values.containsKey(name.lexeme) && values.get(name.lexeme) != UNINITIALIZED) {
             throw new RuntimeError(name, "'" + name.lexeme + "' is already defined.");
         }
 
