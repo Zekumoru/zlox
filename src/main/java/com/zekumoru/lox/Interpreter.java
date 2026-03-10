@@ -234,12 +234,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
-        Object value = null;
         if (stmt.initializer != null) {
-            value = evaluate(stmt.initializer);
+            Object value = evaluate(stmt.initializer);
+            environment.define(stmt.name, value);
+        } else {
+            environment.define(stmt.name);
         }
 
-        environment.define(stmt.name, value);
         return null;
     }
 
