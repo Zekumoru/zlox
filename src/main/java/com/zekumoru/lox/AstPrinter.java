@@ -1,12 +1,14 @@
 package com.zekumoru.lox;
 
+import java.util.List;
+
 public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
-    void print(Expr expr) {
-        System.out.println(expr.accept(this));
+    String print(Expr expr) {
+        return expr.accept(this);
     }
 
-    void print(Stmt stmt) {
-        System.out.println(stmt.accept(this));
+    String print(Stmt stmt) {
+        return stmt.accept(this);
     }
 
     @Override
@@ -43,6 +45,24 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         if (value == null) return "nil";
         if (value instanceof String) return "\"" + value + "\"";
         return value.toString();
+    }
+
+    private String block(List<Stmt> statements) {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("(block");
+        for (Stmt statement : statements) {
+            builder.append(" ");
+            builder.append(print(statement));
+        }
+        builder.append(")");
+
+        return builder.toString();
+    }
+
+    @Override
+    public String visitBlockStmt(Stmt.Block stmt) {
+        return block(stmt.statements);
     }
 
     @Override
