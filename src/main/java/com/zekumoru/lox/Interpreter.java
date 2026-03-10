@@ -5,6 +5,28 @@ import java.util.List;
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Environment environment = new Environment();
 
+    void interpretRepl(List<Stmt> statements) {
+        try {
+            // Print the last expression statement's result.
+            String result = null;
+
+            for (Stmt statement : statements) {
+                if (statement instanceof Stmt.Expression) {
+                    Object value = evaluate(((Stmt.Expression)statement).expression);
+                    result = stringify(value);
+                } else {
+                    execute(statement);
+                }
+            }
+
+            if (result != null) {
+                System.out.println(result);
+            }
+        } catch (RuntimeError error) {
+            Lox.runtimeError(error);
+        }
+    }
+
     void interpret(List<Stmt> statements) {
         try {
             for (Stmt statement : statements) {
