@@ -1,8 +1,12 @@
 package com.zekumoru.lox;
 
-public class AstPrinter implements Expr.Visitor<String> {
-    String print(Expr expr) {
-        return expr.accept(this);
+public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
+    void print(Expr expr) {
+        System.out.println(expr.accept(this));
+    }
+
+    void print(Stmt stmt) {
+        System.out.println(stmt.accept(this));
     }
 
     @Override
@@ -17,8 +21,7 @@ public class AstPrinter implements Expr.Visitor<String> {
 
     @Override
     public String visitLiteralExpr(Expr.Literal expr) {
-        if (expr.value == null) return "nil";
-        return expr.value.toString();
+        return literal(expr.value);
     }
 
     @Override
@@ -29,6 +32,32 @@ public class AstPrinter implements Expr.Visitor<String> {
     @Override
     public String visitConditionalExpr(Expr.Conditional expr) {
         return parenthesize("if", expr.condition, expr.thenBranch, expr.elseBranch);
+    }
+
+    @Override
+    public String visitVariableExpr(Expr.Variable expr) {
+        return expr.name.lexeme;
+    }
+
+    private String literal(Object value) {
+        if (value == null) return "nil";
+        if (value instanceof String) return "\"" + value + "\"";
+        return value.toString();
+    }
+
+    @Override
+    public String visitExpressionStmt(Stmt.Expression stmt) {
+        return parenthesize("expr", stmt.expression);
+    }
+
+    @Override
+    public String visitPrintStmt(Stmt.Print stmt) {
+        return parenthesize("print", stmt.expression);
+    }
+
+    @Override
+    public String visitVarStmt(Stmt.Var stmt) {
+        return parenthesize("var " + stmt.name.lexeme, stmt.initializer);
     }
 
     private String parenthesize(String name, Expr... exprs) {
