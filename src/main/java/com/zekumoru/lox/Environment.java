@@ -6,7 +6,7 @@ import java.util.Map;
 class Environment {
     // Used during initialization.
     private static final Object UNINITIALIZED = new Object();
-    // Used for declared only variables.
+    // Used for declared only identifiers.
     private static final Object UNDEFINED = new Object();
 
     final Environment enclosing;
@@ -29,7 +29,7 @@ class Environment {
             }
 
             if (value == UNDEFINED) {
-                throw new RuntimeError(name, "Variable '" + name.lexeme + "' must be initialized before use.");
+                throw new RuntimeError(name, "Identifier '" + name.lexeme + "' must be initialized before use.");
             }
 
             return value;
@@ -37,7 +37,7 @@ class Environment {
 
         if (enclosing != null) return enclosing.get(name);
 
-        throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+        throw new RuntimeError(name, "Undefined identifier '" + name.lexeme + "'.");
     }
 
     void assign(Token name, Object value) {
@@ -51,7 +51,7 @@ class Environment {
             return;
         }
 
-        throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+        throw new RuntimeError(name, "Undefined identifier '" + name.lexeme + "'.");
     }
 
     void declare(Token name) {
