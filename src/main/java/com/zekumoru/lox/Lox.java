@@ -74,7 +74,7 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
 
-        maybeInsertImplicitSemicolon(tokens);
+        insertSemicolon(tokens);
 
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
@@ -124,15 +124,10 @@ public class Lox {
         return true;
     }
 
-    private static void maybeInsertImplicitSemicolon(List<Token> tokens) {
+    private static void insertSemicolon(List<Token> tokens) {
         if (tokens.size() < 2) return;
 
         Token secondLast = tokens.get(tokens.size() - 2);
-
-        if (secondLast.type == TokenType.SEMICOLON || secondLast.type == TokenType.RIGHT_BRACE) {
-            return;
-        }
-
         Token semicolon = new Token(TokenType.SEMICOLON, ";", null, secondLast.line);
         tokens.add(tokens.size() - 1, semicolon);
     }

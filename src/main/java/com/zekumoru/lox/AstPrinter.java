@@ -76,6 +76,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitEmptyStmt(Stmt.Empty stmt) {
+        return "";
+    }
+
+    @Override
     public String visitBlockStmt(Stmt.Block stmt) {
         return block(stmt.statements);
     }

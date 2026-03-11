@@ -44,6 +44,7 @@ public class Parser {
     }
 
     private Stmt statement() {
+        if (match(SEMICOLON)) return new Stmt.Empty(previous());
         if (match(BREAK)) return breakStatement();
         if (match(CONTINUE)) return continueStatement();
         if (match(FOR)) return forStatement();

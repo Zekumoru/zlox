@@ -4,6 +4,7 @@ import java.util.List;
 
 abstract class Stmt {
     interface Visitor<R> {
+        R visitEmptyStmt(Empty stmt);
         R visitBlockStmt(Block stmt);
         R visitExpressionStmt(Expression stmt);
         R visitFunctionStmt(Function stmt);
@@ -14,6 +15,19 @@ abstract class Stmt {
         R visitLoopStmt(Loop stmt);
         R visitBreakStmt(Break stmt);
         R visitContinueStmt(Continue stmt);
+    }
+    
+    public static class Empty extends Stmt {
+        final Token token;
+        
+        Empty(Token token) {
+            this.token = token;
+        }
+        
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitEmptyStmt(this);
+        }
     }
     
     public static class Block extends Stmt {
