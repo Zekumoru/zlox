@@ -17,6 +17,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitCallExpr(Expr.Call expr) {
+        return parenthesize(expr.callee.accept(this), expr.arguments.toArray(Expr[]::new));
+    }
+
+    @Override
     public String visitGroupingExpr(Expr.Grouping expr) {
         return parenthesize("group", expr.expression);
     }
@@ -73,6 +78,16 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     @Override
     public String visitExpressionStmt(Stmt.Expression stmt) {
         return parenthesize("expr", stmt.expression);
+    }
+
+    @Override
+    public String visitFunctionStmt(Stmt.Function stmt) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < stmt.params.size(); i++) {
+            builder.append(stmt.params.get(i).lexeme);
+            if (i < stmt.params.size() - 1) builder.append(", ");
+        }
+        return parenthesize("fun " + stmt.name.lexeme + " (" + builder + ")");
     }
 
     @Override

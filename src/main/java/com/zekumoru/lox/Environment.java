@@ -67,6 +67,10 @@ class Environment {
             throw new RuntimeError(name, "'" + name.lexeme + "' is already defined.");
         }
 
-        values.put(name.lexeme, value);
+        define(name.lexeme, value);
+    }
+
+    void define(String name, Object value) {
+        values.put(name, value);
     }
 }
