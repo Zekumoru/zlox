@@ -102,6 +102,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitBreakStmt(Stmt.Break stmt) {
+        return parenthesize("break");
+    }
+
+    @Override
     public String visitAssignExpr(Expr.Assign expr) {
         return parenthesize("= " + expr.name.lexeme, expr.value);
     }
