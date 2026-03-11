@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    final private Object NO_PRINT = new Object();
     final Environment globals = new Environment();
     private Environment environment = globals;
 
@@ -20,6 +21,22 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             @Override
             public String toString() { return "<native fn>"; }
         });
+
+        globals.define("print", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                System.out.println(stringify(arguments.getFirst()));
+                return NO_PRINT;
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
     }
 
     void interpretRepl(List<Stmt> statements) {
@@ -30,7 +47,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             for (Stmt statement : statements) {
                 if (statement instanceof Stmt.Expression) {
                     Object value = evaluate(((Stmt.Expression)statement).expression);
-                    result = stringify(value);
+                    if (value != NO_PRINT) result = stringify(value);
                 } else {
                     execute(statement);
                 }
@@ -305,13 +322,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             execute(stmt.elseBranch);
         }
 
-        return null;
-    }
-
-    @Override
-    public Void visitPrintStmt(Stmt.Print stmt) {
-        Object value = evaluate(stmt.expression);
-        System.out.println(stringify(value));
         return null;
     }
 
