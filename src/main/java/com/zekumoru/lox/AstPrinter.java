@@ -95,15 +95,21 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
-    public String visitWhileStmt(Stmt.While stmt) {
+    public String visitLoopStmt(Stmt.Loop stmt) {
         String condition = stmt.condition.accept(this);
+        String increment = stmt.increment.accept(this);
         String body = stmt.body.accept(this);
-        return parenthesize("while " + condition + " " + body);
+        return parenthesize("while " + condition + " " + body + " " + increment);
     }
 
     @Override
     public String visitBreakStmt(Stmt.Break stmt) {
         return parenthesize("break");
+    }
+
+    @Override
+    public String visitContinueStmt(Stmt.Continue stmt) {
+        return parenthesize("continue");
     }
 
     @Override

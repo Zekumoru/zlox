@@ -9,8 +9,9 @@ abstract class Stmt {
         R visitIfStmt(If stmt);
         R visitPrintStmt(Print stmt);
         R visitVarStmt(Var stmt);
-        R visitWhileStmt(While stmt);
+        R visitLoopStmt(Loop stmt);
         R visitBreakStmt(Break stmt);
+        R visitContinueStmt(Continue stmt);
     }
     
     public static class Block extends Stmt {
@@ -84,18 +85,20 @@ abstract class Stmt {
         }
     }
     
-    public static class While extends Stmt {
+    public static class Loop extends Stmt {
         final Expr condition;
+        final Expr increment;
         final Stmt body;
         
-        While(Expr condition, Stmt body) {
+        Loop(Expr condition, Expr increment, Stmt body) {
             this.condition = condition;
+            this.increment = increment;
             this.body = body;
         }
         
         @Override
         <R> R accept(Visitor<R> visitor) {
-            return visitor.visitWhileStmt(this);
+            return visitor.visitLoopStmt(this);
         }
     }
     
@@ -109,6 +112,19 @@ abstract class Stmt {
         @Override
         <R> R accept(Visitor<R> visitor) {
             return visitor.visitBreakStmt(this);
+        }
+    }
+    
+    public static class Continue extends Stmt {
+        final Token keyword;
+        
+        Continue(Token keyword) {
+            this.keyword = keyword;
+        }
+        
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitContinueStmt(this);
         }
     }
     
