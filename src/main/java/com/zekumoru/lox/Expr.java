@@ -13,6 +13,7 @@ abstract class Expr {
         R visitUnaryExpr(Unary expr);
         R visitConditionalExpr(Conditional expr);
         R visitVariableExpr(Variable expr);
+        R visitFunctionExpr(Function expr);
     }
     
     public static class Assign extends Expr {
@@ -149,6 +150,21 @@ abstract class Expr {
         @Override
         <R> R accept(Visitor<R> visitor) {
             return visitor.visitVariableExpr(this);
+        }
+    }
+    
+    public static class Function extends Expr {
+        final List<Token> params;
+        final List<Stmt> body;
+        
+        Function(List<Token> params, List<Stmt> body) {
+            this.params = params;
+            this.body = body;
+        }
+        
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitFunctionExpr(this);
         }
     }
     

@@ -51,6 +51,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         return expr.name.lexeme;
     }
 
+    @Override
+    public String visitFunctionExpr(Expr.Function expr) {
+        return parenthesize("fun-expr (" + parameters(expr.params) + ")");
+    }
+
     private String literal(Object value) {
         if (value == null) return "nil";
         if (value instanceof String) return "\"" + value + "\"";
@@ -82,12 +87,16 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitFunctionStmt(Stmt.Function stmt) {
+        return parenthesize("fun " + stmt.name.lexeme + " (" + parameters(stmt.params) + ")");
+    }
+
+    private String parameters(List<Token> params) {
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < stmt.params.size(); i++) {
-            builder.append(stmt.params.get(i).lexeme);
-            if (i < stmt.params.size() - 1) builder.append(", ");
+        for (int i = 0; i < params.size(); i++) {
+            builder.append(params.get(i).lexeme);
+            if (i < params.size() - 1) builder.append(", ");
         }
-        return parenthesize("fun " + stmt.name.lexeme + " (" + builder + ")");
+        return builder.toString();
     }
 
     @Override
