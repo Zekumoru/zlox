@@ -95,6 +95,13 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitWhileStmt(Stmt.While stmt) {
+        String condition = stmt.condition.accept(this);
+        String body = stmt.body.accept(this);
+        return parenthesize("while " + condition + " " + body);
+    }
+
+    @Override
     public String visitAssignExpr(Expr.Assign expr) {
         return parenthesize("= " + expr.name.lexeme, expr.value);
     }
