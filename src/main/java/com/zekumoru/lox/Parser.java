@@ -308,7 +308,7 @@ public class Parser {
     }
 
     private Expr factor() {
-        if (match(SLASH, STAR)) {
+        if (match(SLASH, STAR, PERCENT)) {
             Token operator = previous();
             Expr right = unary();
             error(operator, "Missing left-hand operand.");
@@ -317,7 +317,7 @@ public class Parser {
 
         Expr expr = unary();
 
-        while (match(SLASH, STAR)) {
+        while (match(SLASH, STAR, PERCENT)) {
             Token operator = previous();
             Expr right = unary();
             expr = new Expr.Binary(expr, operator, right);
