@@ -84,6 +84,59 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             @Override
             public String toString() { return "<native fn>"; }
         });
+
+        globals.define("random", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return Math.random();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+
+        globals.define("floor", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                Object value = arguments.getFirst();
+                if (!(value instanceof Double)) {
+                    throw new CallError("Argument must be a number to floor.");
+                }
+                return Math.floor((Double)value);
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+
+        globals.define("ceil", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                Object value = arguments.getFirst();
+                if (!(value instanceof Double)) {
+                    throw new CallError("Argument must be a number to ceil.");
+                }
+                return Math.ceil((Double)value);
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
     }
 
     void interpretRepl(List<Stmt> statements) {
