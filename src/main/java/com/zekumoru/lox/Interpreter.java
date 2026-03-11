@@ -1,5 +1,8 @@
 package com.zekumoru.lox;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +35,50 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             public Object call(Interpreter interpreter, List<Object> arguments) {
                 System.out.println(stringify(arguments.getFirst()));
                 return NO_PRINT;
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+
+        globals.define("input", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                InputStreamReader input = new InputStreamReader(System.in);
+                BufferedReader reader = new BufferedReader(input);
+                System.out.print(arguments.getFirst());
+
+                try {
+                    return reader.readLine();
+                } catch (IOException error) {
+                    throw new CallError("Cannot read input.");
+                }
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+
+        globals.define("number", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                Object value = arguments.getFirst();
+
+                try {
+                    return Double.parseDouble(value.toString());
+                } catch (NumberFormatException error) {
+                    throw new CallError("Cannot parse argument to number.");
+                }
             }
 
             @Override
@@ -163,7 +210,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     arguments.size() + ".");
         }
 
-        return function.call(this, arguments);
+        try {
+            return function.call(this, arguments);
+        } catch (CallError error) {
+            throw new RuntimeError(expr.paren, error.getMessage());
+        }
     }
 
     @Override
