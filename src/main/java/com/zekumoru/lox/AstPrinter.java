@@ -53,7 +53,7 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitFunctionExpr(Expr.Function expr) {
-        return parenthesize("fun-expr (" + parameters(expr.params) + ")");
+        return parenthesize("fun-expr (" + parameters(expr.params) + " " + block(expr.body) + ")");
     }
 
     private String literal(Object value) {
