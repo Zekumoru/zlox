@@ -25,6 +25,30 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             public String toString() { return "<native fn>"; }
         });
 
+        globals.define("sleep", new LoxCallable() {
+            @Override
+            public int arity() { return 1; }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                Object value = arguments.getFirst();
+                if (!(value instanceof Double)) {
+                    throw new CallError("Argument must be a number.");
+                }
+
+                try {
+                    Thread.sleep(Math.round((Double)value));
+                } catch (InterruptedException error) {
+                    throw new CallError("Cannot perform sleep.");
+                }
+
+                return null;
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+
         globals.define("print", new LoxCallable() {
             @Override
             public int arity() {
@@ -94,6 +118,25 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             @Override
             public Object call(Interpreter interpreter, List<Object> arguments) {
                 return Math.random();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+
+        globals.define("round", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                Object value = arguments.getFirst();
+                if (!(value instanceof Double)) {
+                    throw new CallError("Argument must be a number to round.");
+                }
+                return Math.round((Double)value);
             }
 
             @Override
