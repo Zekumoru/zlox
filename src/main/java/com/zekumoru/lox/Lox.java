@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class Lox {
-    private static final Interpreter interpreter = new Interpreter();
+    private static final Globals globals = new Globals();
+    private static final Interpreter interpreter = new Interpreter(globals);
     static boolean hadError = false;
     static boolean hadRuntimeError = false;
 
@@ -75,13 +76,18 @@ public class Lox {
         // Stop if there was a syntax error.
         if (hadError) return;
 
-        Resolver resolver = new Resolver(interpreter);
+        Resolver resolver = new Resolver(globals, interpreter);
         resolver.resolve(statements);
 
         // Stop if there was a resolution error.
         if (hadError) return;
 
-        interpreter.interpret(statements);
+        // Consumer is used as a flag to check if in REPL.
+        if (consumer != null) {
+            interpreter.interpretRepl(statements);
+        } else {
+            interpreter.interpret(statements);
+        }
     }
 
     private static boolean isCompleteSource(String source) {

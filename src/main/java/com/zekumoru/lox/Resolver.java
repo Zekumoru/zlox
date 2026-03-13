@@ -16,8 +16,15 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
 
-    Resolver(Interpreter interpreter) {
+    Resolver(Globals globals, Interpreter interpreter) {
         this.interpreter = interpreter;
+
+        // Initialize global scope.
+        beginScope();
+
+        for (Globals.Function function : globals.functions()) {
+            scopes.firstElement().put(function.name(), true);
+        }
     }
 
     void resolve(List<Stmt> statements) {
@@ -43,8 +50,6 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private void declare(Token name) {
-        if (scopes.isEmpty()) return;
-
         Map<String, Boolean> scope = scopes.peek();
         if (scope.containsKey(name.lexeme)) {
             Lox.error(name, "Already an identifier with this name in this scope.");
@@ -54,17 +59,20 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private void define(Token name) {
-        if (scopes.isEmpty()) return;
         scopes.peek().put(name.lexeme, true);
     }
 
-    private void resolveLocal(Expr expr, Token name) {
+    private void bind(Expr expr, Token name) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             if (scopes.get(i).containsKey(name.lexeme)) {
-                interpreter.resolve(expr, scopes.size() - i - 1);
+                interpreter.bind(expr, scopes.size() - i - 1);
                 return;
             }
         }
+    }
+
+    private boolean inGlobal(String name) {
+        return scopes.firstElement().containsKey(name);
     }
 
     private void resolveFunction(Stmt.Function function, FunctionType type) {
@@ -93,7 +101,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitAssignExpr(Expr.Assign expr) {
         resolve(expr.value);
-        resolveLocal(expr, expr.name);
+        bind(expr, expr.name);
         return null;
     }
 
@@ -147,11 +155,15 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
-            Lox.error(expr.name, "Can't read local identifier in its own initializer.");
+        if (!(inGlobal(expr.name.lexeme) || scopes.peek().get(expr.name.lexeme) != null)) {
+            Lox.error(expr.name, "Identifier is not defined in " + (scopes.size() == 1 ? "global" : "this") + " scope.");
         }
 
-        resolveLocal(expr, expr.name);
+        if (scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+            Lox.error(expr.name, "Can't read " + (scopes.size() == 1 ? "global" : "local") + " identifier in its own initializer.");
+        }
+
+        bind(expr, expr.name);
         return null;
     }
 

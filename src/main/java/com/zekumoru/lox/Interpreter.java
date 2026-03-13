@@ -1,188 +1,20 @@
 package com.zekumoru.lox;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-    final private Object NO_PRINT = new Object();
+    final static Object NO_PRINT = new Object();
     final Environment globals = new Environment();
     private Environment environment = globals;
-    private final Map<Expr, Integer> locals = new HashMap<>();
+    private final Map<Expr, Integer> bindings = new HashMap<>();
 
-    Interpreter() {
-        globals.define("clock", new LoxCallable() {
-            @Override
-            public int arity() { return 0; }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                return (double)System.currentTimeMillis() / 1000.0;
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("sleep", new LoxCallable() {
-            @Override
-            public int arity() { return 1; }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                Object value = arguments.getFirst();
-                if (!(value instanceof Double)) {
-                    throw new CallError("Argument must be a number.");
-                }
-
-                try {
-                    Thread.sleep(Math.round((Double)value));
-                } catch (InterruptedException error) {
-                    throw new CallError("Cannot perform sleep.");
-                }
-
-                return null;
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("print", new LoxCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                System.out.println(stringify(arguments.getFirst()));
-                return NO_PRINT;
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("input", new LoxCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                InputStreamReader input = new InputStreamReader(System.in);
-                BufferedReader reader = new BufferedReader(input);
-                System.out.print(arguments.getFirst());
-
-                try {
-                    return reader.readLine();
-                } catch (IOException error) {
-                    throw new CallError("Cannot read input.");
-                }
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("number", new LoxCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                Object value = arguments.getFirst();
-
-                try {
-                    return Double.parseDouble(value.toString());
-                } catch (NumberFormatException error) {
-                    throw new CallError("Cannot parse argument to number.");
-                }
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("random", new LoxCallable() {
-            @Override
-            public int arity() {
-                return 0;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                return Math.random();
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("round", new LoxCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                Object value = arguments.getFirst();
-                if (!(value instanceof Double)) {
-                    throw new CallError("Argument must be a number to round.");
-                }
-                return Math.round((Double)value);
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("floor", new LoxCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                Object value = arguments.getFirst();
-                if (!(value instanceof Double)) {
-                    throw new CallError("Argument must be a number to floor.");
-                }
-                return Math.floor((Double)value);
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
-
-        globals.define("ceil", new LoxCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                Object value = arguments.getFirst();
-                if (!(value instanceof Double)) {
-                    throw new CallError("Argument must be a number to ceil.");
-                }
-                return Math.ceil((Double)value);
-            }
-
-            @Override
-            public String toString() { return "<native fn>"; }
-        });
+    Interpreter(Globals globals) {
+        for (Globals.Function function : globals.functions()) {
+            this.globals.define(function.name(), function.callable());
+        }
     }
 
     void interpretRepl(List<Stmt> statements) {
@@ -367,7 +199,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     private Object lookUpVariable(Token name, Expr expr) {
-        Integer distance = locals.get(expr);
+        Integer distance = bindings.get(expr);
         if (distance != null) {
             return environment.getAt(distance, name);
         } else {
@@ -413,7 +245,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return a.equals(b);
     }
 
-    private String stringify(Object object) {
+    String stringify(Object object) {
         if (object == null) return "nil";
 
         if (object instanceof Double) {
@@ -435,8 +267,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
-    void resolve(Expr expr, int depth) {
-        locals.put(expr, depth);
+    void bind(Expr expr, int depth) {
+        bindings.put(expr, depth);
     }
 
     void executeBlock(List<Stmt> statements, Environment environment) {
@@ -473,7 +305,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         LoxFunction function = new LoxFunctionStmt(stmt, environment);
-        environment.define(stmt.name, function);
+        environment.define(stmt.name.lexeme, function);
         return null;
     }
 
@@ -499,11 +331,10 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         if (stmt.initializer != null) {
-            environment.declare(stmt.name);
             Object value = evaluate(stmt.initializer);
-            environment.define(stmt.name, value);
+            environment.define(stmt.name.lexeme, value);
         } else {
-            environment.define(stmt.name);
+            environment.define(stmt.name.lexeme, null);
         }
 
         return null;
@@ -541,7 +372,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
 
-        Integer distance = locals.get(expr);
+        Integer distance = bindings.get(expr);
         if (distance != null) {
             environment.assignAt(distance, expr.name, value);
         } else {
