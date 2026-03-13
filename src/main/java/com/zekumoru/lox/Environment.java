@@ -74,19 +74,23 @@ class Environment {
         values.put(name, value);
     }
 
-    Environment ancestor(int distance) {
+    Environment ancestor(int distance, Token name) {
         Environment environment = this;
         for (int i = 0; i < distance; i++) {
+            if (environment == null) {
+                throw new RuntimeError(name,"Encountered a missing environment.");
+            }
+
             environment = environment.enclosing;
         }
         return environment;
     }
 
-    Object getAt(int distance, String name) {
-        return ancestor(distance).values.get(name);
+    Object getAt(int distance, Token name) {
+        return ancestor(distance, name).values.get(name.lexeme);
     }
 
     void assignAt(int distance, Token name, Object value) {
-        ancestor(distance).values.put(name.lexeme, value);
+        ancestor(distance, name).values.put(name.lexeme, value);
     }
 }
