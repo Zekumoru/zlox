@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class Lox {
     private static final Interpreter interpreter = new Interpreter();
@@ -34,18 +35,6 @@ public class Lox {
         if (hadRuntimeError) System.exit(70);
     }
 
-    private static void run(String source) {
-        Scanner scanner = new Scanner(source);
-        List<Token> tokens = scanner.scanTokens();
-        Parser parser = new Parser(tokens);
-        List<Stmt> statements = parser.parse();
-
-        // Stop if there was a syntax error.
-        if (hadError) return;
-
-        interpreter.interpret(statements);
-    }
-
     private static void runPrompt() throws IOException {
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
@@ -63,18 +52,22 @@ public class Lox {
                 continue;
             }
 
-            runRepl(buffer.toString());
+            run(buffer.toString(), Lox::insertSemicolon);
             buffer.setLength(0);
             System.err.flush();
             hadError = false;
         }
     }
 
-    private static void runRepl(String source) {
+    private static void run(String source) {
+        run(source, null);
+    }
+
+    private static void run(String source, Consumer<List<Token>> consumer) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
 
-        insertSemicolon(tokens);
+        if (consumer != null) consumer.accept(tokens);
 
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
@@ -82,7 +75,13 @@ public class Lox {
         // Stop if there was a syntax error.
         if (hadError) return;
 
-        interpreter.interpretRepl(statements);
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+
+        // Stop if there was a resolution error.
+        if (hadError) return;
+
+        interpreter.interpret(statements);
     }
 
     private static boolean isCompleteSource(String source) {
