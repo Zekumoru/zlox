@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
+class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private enum FunctionType {
         NONE,
         FUNCTION,
@@ -36,7 +36,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         this.interpreter = interpreter;
     }
 
-    void resolve(List<Stmt> statements) {
+    public void resolve(List<Stmt> statements) {
         // Initialize global scope.
         beginScope();
         for (Globals.Function function : globals.functions()) {
@@ -48,6 +48,12 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         endScope();
+    }
+
+    private void resolveBody(List<Stmt> statements) {
+        for (Stmt statement : statements) {
+            resolve(statement);
+        }
     }
 
     private void resolve(Stmt stmt) {
@@ -121,8 +127,9 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         for (Token param : params) {
             declare(param);
             define(param);
+            initialize(param);
         }
-        resolve(body);
+        resolveBody(body);
         endScope();
 
         currentFunction = enclosingFunction;
@@ -219,7 +226,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
         beginScope();
-        resolve(stmt.statements);
+        resolveBody(stmt.statements);
         endScope();
         return null;
     }
@@ -234,8 +241,8 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitFunctionStmt(Stmt.Function stmt) {
         declare(stmt.name);
         define(stmt.name);
-
         resolveFunction(stmt, FunctionType.FUNCTION);
+        initialize(stmt.name);
         return null;
     }
 
