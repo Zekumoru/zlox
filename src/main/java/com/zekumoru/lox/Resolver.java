@@ -98,6 +98,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         scopes.peek().get(name.lexeme).initialized = true;
     }
 
+    private void use(Token name) {
+        scopes.peek().get(name.lexeme).used = true;
+    }
+
     private void bind(Expr expr, Token name) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             if (scopes.get(i).containsKey(name.lexeme)) {
@@ -128,6 +132,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             declare(param);
             define(param);
             initialize(param);
+            use(param);
         }
         resolveBody(body);
         endScope();
@@ -199,7 +204,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         assert scope != null;
-        scope.used = true;
+        use(expr.name);
         if (!scope.defined) {
             Lox.error(expr.name, "Can't read " + (scopes.size() == 1 ? "global" : "local") + " identifier in its own initializer.");
         }
