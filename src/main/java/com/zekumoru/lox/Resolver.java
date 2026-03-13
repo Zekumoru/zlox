@@ -198,6 +198,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
+        if (inGlobal(expr.name.lexeme) && scopes.size() > 1) return null;
+
         Scope scope = scopes.peek().get(expr.name.lexeme);
         if (!(inGlobal(expr.name.lexeme) || scope != null)) {
             Lox.error(expr.name, "Identifier is not defined in " + (scopes.size() == 1 ? "global" : "this") + " scope.");
