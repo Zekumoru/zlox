@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 class Environment {
-    final static Object UNINITIALIZED = new Object();
     final Environment enclosing;
     private final Map<String, Object> values = new HashMap<>();
 
@@ -41,12 +40,7 @@ class Environment {
     }
 
     Object getAt(int distance, Token name) {
-        Environment environment = ancestor(distance, name);
-        Object value = environment.values.get(name.lexeme);
-        if (value == UNINITIALIZED) {
-            throw new RuntimeError(name, "Can't read uninitialized " + (environment.enclosing == null ? "global" : "local") + " identifier '" + name.lexeme + "'.");
-        }
-        return value;
+        return ancestor(distance, name).values.get(name.lexeme);
     }
 
     void assignAt(int distance, Token name, Object value) {

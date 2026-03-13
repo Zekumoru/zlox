@@ -12,25 +12,42 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         ANONYMOUS_FUNCTION,
     }
 
-    private final Interpreter interpreter;
-    private final Stack<Map<String, Boolean>> scopes = new Stack<>();
-    private FunctionType currentFunction = FunctionType.NONE;
+    private static class Scope {
+        final Token name;
+        boolean defined;
+        boolean initialized;
+        boolean used;
 
-    Resolver(Globals globals, Interpreter interpreter) {
-        this.interpreter = interpreter;
-
-        // Initialize global scope.
-        beginScope();
-
-        for (Globals.Function function : globals.functions()) {
-            scopes.firstElement().put(function.name(), true);
+        Scope(Token name, boolean defined, boolean initialized, boolean used) {
+            this.name = name;
+            this.defined = defined;
+            this.initialized = initialized;
+            this.used = used;
         }
     }
 
+    private final Interpreter interpreter;
+    private final Globals globals;
+    private final Stack<Map<String, Scope>> scopes = new Stack<>();
+    private FunctionType currentFunction = FunctionType.NONE;
+
+    Resolver(Globals globals, Interpreter interpreter) {
+        this.globals = globals;
+        this.interpreter = interpreter;
+    }
+
     void resolve(List<Stmt> statements) {
+        // Initialize global scope.
+        beginScope();
+        for (Globals.Function function : globals.functions()) {
+            scopes.firstElement().put(function.name(), new Scope(null, true, true, true));
+        }
+
         for (Stmt statement : statements) {
             resolve(statement);
         }
+
+        endScope();
     }
 
     private void resolve(Stmt stmt) {
@@ -46,20 +63,33 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private void endScope() {
+        for (Scope scope : scopes.peek().values()) {
+            if (!scope.used) {
+                // Assert name is always available since native functions
+                // or globals are always already "used".
+                assert scope.name != null;
+                Lox.error(scope.name, "Unused " + (scopes.size() == 1 ? "global" : "local") + " identifier.");
+            }
+        }
+
         scopes.pop();
     }
 
     private void declare(Token name) {
-        Map<String, Boolean> scope = scopes.peek();
+        Map<String, Scope> scope = scopes.peek();
         if (scope.containsKey(name.lexeme)) {
-            Lox.error(name, "Already an identifier with this name in this scope.");
+            Lox.error(name, "Already an identifier with this name in " + (scopes.size() == 1 ? "global" : "this") + " scope.");
         }
 
-        scope.put(name.lexeme, false);
+        scope.put(name.lexeme, new Scope(name, false, false, false));
     }
 
     private void define(Token name) {
-        scopes.peek().put(name.lexeme, true);
+        scopes.peek().get(name.lexeme).defined = true;
+    }
+
+    private void initialize(Token name) {
+        scopes.peek().get(name.lexeme).initialized = true;
     }
 
     private void bind(Expr expr, Token name) {
@@ -101,6 +131,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitAssignExpr(Expr.Assign expr) {
         resolve(expr.value);
+        initialize(expr.name);
         bind(expr, expr.name);
         return null;
     }
@@ -155,13 +186,19 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        Boolean inScope = scopes.peek().get(expr.name.lexeme);
-        if (!(inGlobal(expr.name.lexeme) || inScope != null)) {
+        Scope scope = scopes.peek().get(expr.name.lexeme);
+        if (!(inGlobal(expr.name.lexeme) || scope != null)) {
             Lox.error(expr.name, "Identifier is not defined in " + (scopes.size() == 1 ? "global" : "this") + " scope.");
         }
 
-        if (inScope == Boolean.FALSE) {
+        assert scope != null;
+        scope.used = true;
+        if (!scope.defined) {
             Lox.error(expr.name, "Can't read " + (scopes.size() == 1 ? "global" : "local") + " identifier in its own initializer.");
+        }
+
+        if (!scope.initialized) {
+            Lox.error(expr.name, "Can't read uninitialized " + (scopes.size() == 1 ? "global" : "local") + " identifier.");
         }
 
         bind(expr, expr.name);
@@ -228,6 +265,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         declare(stmt.name);
         if (stmt.initializer != null) {
             resolve(stmt.initializer);
+            initialize(stmt.name);
         }
         define(stmt.name);
         return null;
