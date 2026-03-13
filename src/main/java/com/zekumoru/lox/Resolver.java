@@ -155,11 +155,12 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        if (!(inGlobal(expr.name.lexeme) || scopes.peek().get(expr.name.lexeme) != null)) {
+        Boolean inScope = scopes.peek().get(expr.name.lexeme);
+        if (!(inGlobal(expr.name.lexeme) || inScope != null)) {
             Lox.error(expr.name, "Identifier is not defined in " + (scopes.size() == 1 ? "global" : "this") + " scope.");
         }
 
-        if (scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+        if (inScope == Boolean.FALSE) {
             Lox.error(expr.name, "Can't read " + (scopes.size() == 1 ? "global" : "local") + " identifier in its own initializer.");
         }
 
