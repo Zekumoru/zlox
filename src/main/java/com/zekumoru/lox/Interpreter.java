@@ -9,7 +9,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final static Object NO_PRINT = new Object();
     final Environment globals = new Environment();
     private Environment environment = globals;
-    private final Map<Expr, Integer> bindings = new HashMap<>();
+    private final Map<Object, Integer> bindings = new HashMap<>();
 
     Interpreter(Globals globals) {
         for (Globals.Function function : globals.functions()) {
@@ -267,8 +267,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
-    void bind(Expr expr, int depth) {
-        bindings.put(expr, depth);
+    void bind(Object exprOrStmt, int depth) {
+        bindings.put(exprOrStmt, depth);
     }
 
     void executeBlock(List<Stmt> statements, Environment environment) {

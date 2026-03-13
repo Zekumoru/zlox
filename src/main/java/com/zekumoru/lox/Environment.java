@@ -15,10 +15,12 @@ class Environment {
         this.enclosing = enclosing;
     }
 
+    @Deprecated
     Object get(Token name) {
         return getAt(0, name);
     }
 
+    @Deprecated
     void assign(Token name, Object value) {
         assignAt(0, name, value);
     }
