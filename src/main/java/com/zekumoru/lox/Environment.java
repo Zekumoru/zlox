@@ -1,11 +1,18 @@
 package com.zekumoru.lox;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 class Environment {
     final Environment enclosing;
-    private final Map<String, Object> values = new HashMap<>();
+
+    record Temp (String name, Object value) {
+        @Override public String toString() { return name; }
+    }
+
+    // The Environment class works tightly with the Resolver
+    // to ensure that the values are indexed properly.
+    private final List<Temp> values = new ArrayList<>();
 
     Environment() {
         enclosing = null;
@@ -15,37 +22,22 @@ class Environment {
         this.enclosing = enclosing;
     }
 
-    @Deprecated
-    Object get(Token name) {
-        return getAt(0, name);
+    void define(int depth, String name, Object value) {
+        var env = ancestor(depth).values;
+        System.out.println("Adding '" + name + "' to a scope with lexical depth " + depth + " and index of " + env.size() + ".");
+        env.add(new Temp(name, value));
     }
 
-    @Deprecated
-    void assign(Token name, Object value) {
-        assignAt(0, name, value);
+    Object get(int depth, int index) {
+        return ancestor(depth).values.get(index);
     }
 
-    void define(String name, Object value) {
-        values.put(name, value);
-    }
-
-    Environment ancestor(int distance, Token name) {
+    Environment ancestor(int depth) {
         Environment environment = this;
-        for (int i = 0; i < distance; i++) {
-            if (environment == null) {
-                throw new RuntimeError(name,"Encountered a missing environment.");
-            }
-
+        for (int i = 0; i < depth; i++) {
+            assert environment != null;
             environment = environment.enclosing;
         }
         return environment;
-    }
-
-    Object getAt(int distance, Token name) {
-        return ancestor(distance, name).values.get(name.lexeme);
-    }
-
-    void assignAt(int distance, Token name, Object value) {
-        ancestor(distance, name).values.put(name.lexeme, value);
     }
 }

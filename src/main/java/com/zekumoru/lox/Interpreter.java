@@ -6,14 +6,16 @@ import java.util.List;
 import java.util.Map;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private record BindingRef(int depth, int index) {}
+
     final static Object NO_PRINT = new Object();
     final Environment globals = new Environment();
     private Environment environment = globals;
-    private final Map<Object, Integer> bindings = new HashMap<>();
+    private final Map<Object, BindingRef> bindings = new HashMap<>();
 
     Interpreter(Globals globals) {
         for (Globals.Function function : globals.functions()) {
-            this.globals.define(function.name(), function.callable());
+            this.globals.define(0, function.name(), function.callable());
         }
     }
 
@@ -199,12 +201,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     private Object lookUpVariable(Token name, Expr expr) {
-        Integer distance = bindings.get(expr);
-        if (distance != null) {
-            return environment.getAt(distance, name);
+        BindingRef ref = bindings.get(expr);
+        if (ref != null) {
+           // return environment.get(ref, name);
         } else {
-            return globals.get(name);
+           // return globals.get(name);
         }
+        return null; // TEMPORARY, TO BE DELETED!
     }
 
     @Override
@@ -267,8 +270,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
-    void bind(Object exprOrStmt, int depth) {
-        bindings.put(exprOrStmt, depth);
+    void bind(Object exprOrStmt, int depth, int index) {
+        bindings.put(exprOrStmt, new BindingRef(depth, index));
     }
 
     void executeBlock(List<Stmt> statements, Environment environment) {
@@ -305,7 +308,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         LoxFunction function = new LoxFunctionStmt(stmt, environment);
-        environment.define(stmt.name.lexeme, function);
+        //environment.define(stmt.name.lexeme, function);
         return null;
     }
 
@@ -332,9 +335,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitVarStmt(Stmt.Var stmt) {
         if (stmt.initializer != null) {
             Object value = evaluate(stmt.initializer);
-            environment.define(stmt.name.lexeme, value);
+            //environment.define(stmt.name.lexeme, value);
         } else {
-            environment.define(stmt.name.lexeme, null);
+            //environment.define(stmt.name.lexeme, null);
         }
 
         return null;
@@ -372,11 +375,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
 
-        Integer distance = bindings.get(expr);
-        if (distance != null) {
-            environment.assignAt(distance, expr.name, value);
+        BindingRef ref = bindings.get(expr);
+        if (ref != null) {
+            //environment.assignAt(distance, expr.name, value);
         } else {
-            globals.assign(expr.name, value);
+            //globals.assign(expr.name, value);
         }
 
         return value;

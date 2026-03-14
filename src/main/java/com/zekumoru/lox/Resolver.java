@@ -111,8 +111,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private void bind(Object exprOrStmt, Token name) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
-            if (scopes.get(i).refs.containsKey(name.lexeme)) {
-                interpreter.bind(exprOrStmt, scopes.size() - i - 1);
+            ScopeRef ref = scopes.get(i).refs.get(name.lexeme);
+            if (ref != null) {
+                interpreter.bind(exprOrStmt, scopes.size() - i - 1, ref.index);
                 return;
             }
         }
@@ -146,7 +147,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitAssignExpr(Expr.Assign expr) {
         resolve(expr.value);
-        initialize(expr.name);
+        ScopeRef ref = scopes.peek().refs.get(expr.name.lexeme);
+        if (ref != null)  initialize(expr.name);
         bind(expr, expr.name);
         return null;
     }
@@ -222,8 +224,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private boolean isInOuterScope(Expr.Variable expr) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
-            Scope scope = scopes.get(i);
-            if (scope.refs.containsKey(expr.name.lexeme)) {
+            ScopeRef ref = scopes.get(i).refs.get(expr.name.lexeme);
+            if (ref != null) {
+                ref.used = true;
                 return true;
             }
         }
@@ -295,6 +298,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             initialize(stmt.name);
         }
         define(stmt.name);
+        bind(stmt, stmt.name);
         return null;
     }
 
