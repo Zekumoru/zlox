@@ -109,11 +109,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         scopes.peek().refs.get(name.lexeme).used = true;
     }
 
-    private void bind(Object exprOrStmt, Token name) {
+    private void bind(Token name) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             ScopeRef ref = scopes.get(i).refs.get(name.lexeme);
             if (ref != null) {
-                interpreter.bind(exprOrStmt, scopes.size() - i - 1, ref.index);
+                interpreter.bind(name, scopes.size() - i - 1, ref.index);
                 return;
             }
         }
@@ -137,6 +137,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             define(param);
             initialize(param);
             use(param);
+            bind(param);
         }
         resolveBody(body);
         endScope();
@@ -149,7 +150,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         resolve(expr.value);
         ScopeRef ref = scopes.peek().refs.get(expr.name.lexeme);
         if (ref != null)  initialize(expr.name);
-        bind(expr, expr.name);
+        bind(expr.name);
         return null;
     }
 
@@ -218,7 +219,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             }
         }
 
-        bind(expr, expr.name);
+        bind(expr.name);
         return null;
     }
 
@@ -265,7 +266,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         define(stmt.name);
         resolveFunction(stmt, FunctionType.FUNCTION);
         initialize(stmt.name);
-        bind(stmt, stmt.name);
+        bind(stmt.name);
         return null;
     }
 
@@ -298,7 +299,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             initialize(stmt.name);
         }
         define(stmt.name);
-        bind(stmt, stmt.name);
+        bind(stmt.name);
         return null;
     }
 

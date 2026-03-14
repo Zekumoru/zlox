@@ -6,13 +6,9 @@ import java.util.List;
 class Environment {
     final Environment enclosing;
 
-    record Temp (String name, Object value) {
-        @Override public String toString() { return name; }
-    }
-
     // The Environment class works tightly with the Resolver
     // to ensure that the values are indexed properly.
-    private final List<Temp> values = new ArrayList<>();
+    private final List<Object> values = new ArrayList<>();
 
     Environment() {
         enclosing = null;
@@ -22,10 +18,12 @@ class Environment {
         this.enclosing = enclosing;
     }
 
-    void define(int depth, String name, Object value) {
-        var env = ancestor(depth).values;
-        System.out.println("Adding '" + name + "' to a scope with lexical depth " + depth + " and index of " + env.size() + ".");
-        env.add(new Temp(name, value));
+    void define(int depth, Object value) {
+        ancestor(depth).values.add(value);
+    }
+
+    void assign(int depth, int index, Object value) {
+        ancestor(depth).values.set(index, value);
     }
 
     Object get(int depth, int index) {

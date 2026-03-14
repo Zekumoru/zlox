@@ -22,7 +22,9 @@ abstract class LoxFunction implements LoxCallable {
     public Object call(Interpreter interpreter, List<Object> arguments) {
         Environment environment = new Environment(closure);
         for (int i = 0; i < parameters().size(); i++) {
-            //environment.define(parameters().get(i).lexeme, arguments.get(i));
+            Interpreter.BindingRef ref = interpreter.bindings.get(parameters().get(i));
+            assert ref != null;
+            environment.define(ref.depth(), arguments.get(i));
         }
 
         try {
