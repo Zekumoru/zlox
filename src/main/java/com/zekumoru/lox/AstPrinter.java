@@ -92,7 +92,7 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitFunctionStmt(Stmt.Function stmt) {
-        return parenthesize("fun " + stmt.name.lexeme + " (" + parameters(stmt.params) + ")");
+        return parenthesize("fun " + stmt.name.lexeme + " (" + parameters(stmt.params) + ") (" + block(stmt.body) + ")");
     }
 
     private String parameters(List<Token> params) {
