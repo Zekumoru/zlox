@@ -79,6 +79,9 @@ public class Lox {
         Resolver resolver = new Resolver(globals, interpreter);
         resolver.resolve(statements);
 
+        AstPrinter printer = new AstPrinter();
+        System.out.println(printer.print(statements.getFirst()));
+
         // Stop if there was a resolution error.
         if (hadError) return;
 

@@ -335,6 +335,16 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        BindingRef ref = bindings.get(stmt.name);
+        assert ref != null;
+        environment.define(ref.depth, null);
+        LoxClass klass = new LoxClass(stmt.name.lexeme);
+        environment.assign(ref.depth, ref.index, klass);
+        return null;
+    }
+
+    @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         evaluate(stmt.expression);
         return null;
