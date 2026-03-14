@@ -148,7 +148,7 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitAssignExpr(Expr.Assign expr) {
-        return parenthesize("= " + expr.name.lexeme, expr.value);
+        return parenthesize(expr.operator.lexeme + " " + expr.name.lexeme, expr.value);
     }
 
     private String parenthesize(String name, Expr... exprs) {

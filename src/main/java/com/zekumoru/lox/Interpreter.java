@@ -252,7 +252,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private void checkNumberOperand(Token operator, Object operand) {
         if (operand instanceof Double) return;
-        throw new RuntimeError(operator, "Operand must be a number");
+        throw new RuntimeError(operator, "Operand '" + stringify(operand) + "' must be a number");
     }
 
     private void checkComparisonOperands(Token operator, Object left, Object right) {
@@ -344,7 +344,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitFunctionStmt(Stmt.Function stmt) {
         LoxFunction function = new LoxFunctionStmt(stmt, environment);
         BindingRef ref = bindings.get(stmt.name);
-        if (ref != null) environment.define(ref.depth, function);
+        assert ref != null;
+        environment.define(ref.depth, function);
         return null;
     }
 
@@ -413,12 +414,40 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
-
         BindingRef ref = bindings.get(expr.name);
-        if (ref != null) {
+
+        assert ref != null;
+
+        if (expr.operator.type == TokenType.EQUAL) {
             environment.assign(ref.depth, ref.index, value);
+            return value;
         }
 
-        return value;
+        if (value instanceof String) {
+            Object prevValue = environment.get(ref.depth, ref.index);
+            if (!(prevValue instanceof String newValue)) {
+                throw new RuntimeError(expr.operator, "Variable '" + expr.name.lexeme + "' must be a string.");
+            }
+            newValue += value;
+            environment.assign(ref.depth, ref.index, newValue);
+            return newValue;
+        }
+
+        checkNumberOperand(expr.operator, value);
+        Object prevValue = environment.get(ref.depth, ref.index);
+        if (!(prevValue instanceof Double newValue)) {
+            throw new RuntimeError(expr.operator, "Variable '" + expr.name.lexeme + "' must be a number.");
+        }
+
+        switch (expr.operator.type) {
+            case PLUS_EQUAL: newValue += (double)value; break;
+            case MINUS_EQUAL: newValue -= (double)value; break;
+            case STAR_EQUAL: newValue *= (double)value; break;
+            case SLASH_EQUAL: newValue /= (double)value; break;
+            case PERCENT_EQUAL: newValue %= (double)value; break;
+        }
+
+        environment.assign(ref.depth, ref.index, newValue);
+        return newValue;
     }
 }

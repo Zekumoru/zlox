@@ -149,7 +149,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitAssignExpr(Expr.Assign expr) {
         resolve(expr.value);
         ScopeRef ref = scopes.peek().refs.get(expr.name.lexeme);
-        if (ref != null)  initialize(expr.name);
+        if (ref != null) initialize(expr.name);
+        use(expr.name);
         bind(expr.name);
         return null;
     }
