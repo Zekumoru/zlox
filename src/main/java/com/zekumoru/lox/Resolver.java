@@ -90,11 +90,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private void declare(Token name) {
         Map<String, ScopeRef> refs = scopes.peek().refs;
-        if (refs.containsKey(name.lexeme)) {
+        ScopeRef ref = refs.get(name.lexeme);
+        if (ref != null) {
             Lox.error(name, "Already an identifier with this name in " + (scopes.size() == 1 ? "global" : "this") + " scope.");
+            refs.put(name.lexeme, new ScopeRef(name, refs.size(), ref.defined, ref.initialized, ref.used));
+        } else {
+            refs.put(name.lexeme, new ScopeRef(name, refs.size(), false, false, false));
         }
 
-        refs.put(name.lexeme, new ScopeRef(name, refs.size(), false, false, false));
     }
 
     private void define(Token name) {
