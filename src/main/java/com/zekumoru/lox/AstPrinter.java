@@ -42,6 +42,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitPostfixExpr(Expr.Postfix expr) {
+        return parenthesize("post" + expr.operator.lexeme, expr.left);
+    }
+
+    @Override
     public String visitConditionalExpr(Expr.Conditional expr) {
         return parenthesize("if", expr.condition, expr.thenBranch, expr.elseBranch);
     }

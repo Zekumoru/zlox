@@ -359,13 +359,22 @@ public class Parser {
     }
 
     private Expr unary() {
-        if (match(BANG, MINUS)) {
+        if (match(BANG, MINUS, PLUS_PLUS, MINUS_MINUS)) {
             Token operator = previous();
             Expr right = unary();
             return new Expr.Unary(operator, right);
         }
 
-        return call();
+        return postfix();
+    }
+
+    private Expr postfix() {
+        Expr expr = call();
+        if (match(PLUS_PLUS, MINUS_MINUS)) {
+            Token operator = previous();
+            return new Expr.Postfix(expr, operator);
+        }
+        return expr;
     }
 
     private Expr finishCall(Expr callee) {

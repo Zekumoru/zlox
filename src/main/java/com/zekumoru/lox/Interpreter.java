@@ -184,10 +184,48 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             case MINUS:
                 checkNumberOperand(expr.operator, right);
                 return -(double)right;
+            case PLUS_PLUS:
+            case MINUS_MINUS:
+                if (!(expr.right instanceof Expr.Variable var)) {
+                    throw new RuntimeError(expr.operator, "Prefix expression must be a variable.");
+                }
+
+                checkNumberOperand(expr.operator, right);
+                double value = (double)right;
+                BindingRef ref = bindings.get(var.name);
+
+                switch (expr.operator.type) {
+                    case PLUS_PLUS: value++; break;
+                    case MINUS_MINUS: value--; break;
+                }
+
+                environment.assign(ref.depth, ref.index, value);
+                return value;
         }
 
         // Unreachable.
         return null;
+    }
+
+    @Override
+    public Object visitPostfixExpr(Expr.Postfix expr) {
+        if (!(expr.left instanceof Expr.Variable var)) {
+            throw new RuntimeError(expr.operator, "Postfix expression must be a variable.");
+        }
+
+        Object left = evaluate(expr.left);
+        checkNumberOperand(expr.operator, left);
+        double value = (double)left;
+        final double prevValue = value;
+        BindingRef ref = bindings.get(var.name);
+
+        switch (expr.operator.type) {
+            case PLUS_PLUS: value++; break;
+            case MINUS_MINUS: value--; break;
+        }
+
+        environment.assign(ref.depth, ref.index, value);
+        return prevValue;
     }
 
     @Override
