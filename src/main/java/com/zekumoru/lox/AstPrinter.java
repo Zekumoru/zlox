@@ -22,6 +22,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitGetExpr(Expr.Get expr) {
+        return parenthesize("method-access" + expr.name.lexeme);
+    }
+
+    @Override
     public String visitGroupingExpr(Expr.Grouping expr) {
         return parenthesize("group", expr.expression);
     }
@@ -34,6 +39,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     @Override
     public String visitLogicalExpr(Expr.Logical expr) {
         return parenthesize(expr.operator.lexeme, expr.left, expr.right);
+    }
+
+    @Override
+    public String visitSetExpr(Expr.Set expr) {
+        return parenthesize("method-set", expr.object, expr.value);
     }
 
     @Override
@@ -98,7 +108,7 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     private String classBody(List<Stmt.Function> statements) {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("(method");
+        builder.append("(methods");
         for (Stmt statement : statements) {
             builder.append(" ");
             builder.append(print(statement));
