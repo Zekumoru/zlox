@@ -33,7 +33,7 @@ public class Parser {
 
     private Stmt declaration() {
         try {
-            if (match(FUN)) return function("function");
+            if (match(FN)) return function("function");
             if (match(VAR)) return varDeclaration();
 
             return statement();
@@ -421,7 +421,7 @@ public class Parser {
             return new Expr.Variable(previous());
         }
 
-        if (match(FUN)) {
+        if (match(FN)) {
             return functionExpression("anonymous function");
         }
 
@@ -486,7 +486,7 @@ public class Parser {
 
             switch (peek().type) {
                 case CLASS:
-                case FUN:
+                case FN:
                 case VAR:
                 case FOR:
                 case IF:
