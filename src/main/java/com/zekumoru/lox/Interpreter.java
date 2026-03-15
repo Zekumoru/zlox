@@ -362,7 +362,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         BindingRef ref = bindings.get(stmt.name);
         assert ref != null;
         environment.define(ref.depth, null);
-        LoxClass klass = new LoxClass(stmt.name.lexeme);
+
+        Map<String, LoxFunction> methods = new HashMap<>();
+        for (Stmt.Function method : stmt.methods) {
+            LoxFunction function = new LoxFunctionStmt(method, environment);
+            methods.put(method.name.lexeme, function);
+        }
+
+        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
         environment.assign(ref.depth, ref.index, klass);
         return null;
     }
