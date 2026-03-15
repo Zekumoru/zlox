@@ -3,11 +3,12 @@ package com.zekumoru.lox;
 import java.util.List;
 import java.util.Map;
 
-class LoxClass implements LoxCallable {
+class LoxClass extends LoxInstance implements LoxCallable {
     final String name;
     private final Map<String, LoxFunctionStmt> methods;
 
-    LoxClass(String name, Map<String, LoxFunctionStmt> methods) {
+    LoxClass(LoxClass metaclass, String name, Map<String, LoxFunctionStmt> methods) {
+        super(metaclass);
         this.name = name;
         this.methods = methods;
     }

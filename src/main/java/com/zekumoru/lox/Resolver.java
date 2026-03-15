@@ -12,6 +12,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         ANONYMOUS_FUNCTION,
         INITIALIZER,
         METHOD,
+        CLASS_METHOD,
     }
 
     private enum ClassType {
@@ -315,6 +316,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             }
 
             resolveFunction(method, declaration);
+        }
+
+        for (Stmt.Function classMethod : stmt.classMethods) {
+            FunctionType declaration = FunctionType.CLASS_METHOD;
+            if (classMethod.name.lexeme.equals("init")) {
+                Lox.error(classMethod.name, "Can't use initializer as a static method.");
+            }
+
+            resolveFunction(classMethod, declaration);
         }
 
         endScope();

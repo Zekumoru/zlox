@@ -22,6 +22,7 @@ enum TokenType {
     AND, CLASS, ELSE, FALSE, FN, FOR, IF, NIL, OR,
     RETURN, SUPER, THIS, TRUE, VAR, WHILE,
     BREAK, CONTINUE,
+    STATIC,
 
     EOF
 }

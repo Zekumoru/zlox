@@ -154,11 +154,15 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitGetExpr(Expr.Get expr) {
         Object object = evaluate(expr.object);
-        if (object instanceof LoxInstance) {
-            return ((LoxInstance)object).get(expr.name);
+        if (!(object instanceof LoxInstance)) {
+            throw new RuntimeError(expr.name, "Only instances have properties.");
         }
 
-        throw new RuntimeError(expr.name, "Only instances have properties.");
+        if (object instanceof LoxClass && expr.object instanceof Expr.This) {
+            throw new RuntimeError(expr.name, "Cannot access 'this' in a static method.");
+        }
+
+        return ((LoxInstance) object).get(expr.name);
     }
 
     @Override
@@ -370,11 +374,18 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         Map<String, LoxFunctionStmt> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
-            LoxFunctionStmt function = new LoxFunctionStmt(method, environment, method.name.lexeme.equals("this"));
+            LoxFunctionStmt function = new LoxFunctionStmt(method, environment, method.name.lexeme.equals("init"));
             methods.put(method.name.lexeme, function);
         }
 
-        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
+        Map<String, LoxFunctionStmt> classMethods = new HashMap<>();
+        for (Stmt.Function classMethod : stmt.classMethods) {
+            LoxFunctionStmt function = new LoxFunctionStmt(classMethod, environment, false);
+            classMethods.put(classMethod.name.lexeme, function);
+        }
+
+        LoxClass metaclass = new LoxClass(null, stmt.name.lexeme + " metaclass", classMethods);
+        LoxClass klass = new LoxClass(metaclass, stmt.name.lexeme, methods);
         environment.assign(ref.depth, ref.index, klass);
         return null;
     }

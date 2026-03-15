@@ -18,23 +18,24 @@ class Scanner {
 
     static {
         keywords = new HashMap<>();
-        keywords.put("and",    AND);
-        keywords.put("class",  CLASS);
-        keywords.put("else",   ELSE);
-        keywords.put("false",  FALSE);
-        keywords.put("for",    FOR);
-        keywords.put("fn",     FN);
-        keywords.put("if",     IF);
-        keywords.put("nil",    NIL);
-        keywords.put("or",     OR);
-        keywords.put("return", RETURN);
-        keywords.put("super",  SUPER);
-        keywords.put("this",   THIS);
-        keywords.put("true",   TRUE);
-        keywords.put("var",    VAR);
-        keywords.put("while",  WHILE);
-        keywords.put("break",  BREAK);
-        keywords.put("continue",  CONTINUE);
+        keywords.put("and",      AND);
+        keywords.put("class",    CLASS);
+        keywords.put("static",   STATIC);
+        keywords.put("else",     ELSE);
+        keywords.put("false",    FALSE);
+        keywords.put("for",      FOR);
+        keywords.put("fn",       FN);
+        keywords.put("if",       IF);
+        keywords.put("nil",      NIL);
+        keywords.put("or",       OR);
+        keywords.put("return",   RETURN);
+        keywords.put("super",    SUPER);
+        keywords.put("this",     THIS);
+        keywords.put("true",     TRUE);
+        keywords.put("var",      VAR);
+        keywords.put("while",    WHILE);
+        keywords.put("break",    BREAK);
+        keywords.put("continue", CONTINUE);
     }
 
     Scanner(String source) {
