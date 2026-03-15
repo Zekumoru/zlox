@@ -4,8 +4,10 @@ import java.util.List;
 
 abstract class LoxFunction implements LoxCallable {
     protected final Environment closure;
+    protected final boolean isInitializer;
 
-    LoxFunction(Environment closure) {
+    LoxFunction(Environment closure, boolean isInitializer) {
+        this.isInitializer = isInitializer;
         this.closure = closure;
     }
 
@@ -30,8 +32,12 @@ abstract class LoxFunction implements LoxCallable {
         try {
             interpreter.executeBlock(body(), environment);
         } catch (Return returnValue) {
+            if (isInitializer) return closure.get(0, 0);
+
             return returnValue.value;
         }
+
+        if (isInitializer) return closure.get(0, 0);
 
         return null;
     }

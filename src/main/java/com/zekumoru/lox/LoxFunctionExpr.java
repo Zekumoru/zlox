@@ -6,7 +6,7 @@ class LoxFunctionExpr extends LoxFunction {
     private final Expr.Function expression;
 
     LoxFunctionExpr(Expr.Function expression, Environment closure) {
-        super(closure);
+        super(closure, false);
         this.expression = expression;
     }
 

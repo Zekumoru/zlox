@@ -370,7 +370,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         Map<String, LoxFunctionStmt> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
-            LoxFunctionStmt function = new LoxFunctionStmt(method, environment);
+            LoxFunctionStmt function = new LoxFunctionStmt(method, environment, method.name.lexeme.equals("this"));
             methods.put(method.name.lexeme, function);
         }
 
@@ -387,7 +387,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        LoxFunction function = new LoxFunctionStmt(stmt, environment);
+        LoxFunction function = new LoxFunctionStmt(stmt, environment, false);
         BindingRef ref = bindings.get(stmt.name);
         assert ref != null;
         environment.define(ref.depth, function);
