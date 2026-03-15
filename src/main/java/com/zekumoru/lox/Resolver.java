@@ -382,7 +382,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitLoopStmt(Stmt.Loop stmt) {
         resolve(stmt.condition);
         resolve(stmt.body);
-        resolve(stmt.increment);
+        if (stmt.increment != null) resolve(stmt.increment);
         return null;
     }
 
