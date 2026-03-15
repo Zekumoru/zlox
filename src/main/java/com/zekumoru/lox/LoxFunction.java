@@ -3,7 +3,7 @@ package com.zekumoru.lox;
 import java.util.List;
 
 abstract class LoxFunction implements LoxCallable {
-    private final Environment closure;
+    protected final Environment closure;
 
     LoxFunction(Environment closure) {
         this.closure = closure;

@@ -198,6 +198,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitThisExpr(Expr.This expr) {
+        return lookUpVariable(expr.keyword);
+    }
+
+    @Override
     public Object visitUnaryExpr(Expr.Unary expr) {
         Object right = evaluate(expr.right);
 
@@ -363,9 +368,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         assert ref != null;
         environment.define(ref.depth, null);
 
-        Map<String, LoxFunction> methods = new HashMap<>();
+        Map<String, LoxFunctionStmt> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
-            LoxFunction function = new LoxFunctionStmt(method, environment);
+            LoxFunctionStmt function = new LoxFunctionStmt(method, environment);
             methods.put(method.name.lexeme, function);
         }
 

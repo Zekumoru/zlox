@@ -10,6 +10,12 @@ class LoxFunctionStmt extends LoxFunction {
         this.declaration = declaration;
     }
 
+    LoxFunctionStmt bind(LoxInstance instance) {
+        Environment environment = new Environment(closure);
+        environment.define(0, instance);
+        return new LoxFunctionStmt(declaration, environment);
+    }
+
     @Override
     List<Token> parameters() {
         return declaration.params;

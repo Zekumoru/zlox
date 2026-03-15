@@ -12,6 +12,7 @@ abstract class Expr {
         R visitLiteralExpr(Literal expr);
         R visitLogicalExpr(Logical expr);
         R visitSetExpr(Set expr);
+        R visitThisExpr(This expr);
         R visitUnaryExpr(Unary expr);
         R visitPostfixExpr(Postfix expr);
         R visitConditionalExpr(Conditional expr);
@@ -142,6 +143,19 @@ abstract class Expr {
         @Override
         <R> R accept(Visitor<R> visitor) {
             return visitor.visitSetExpr(this);
+        }
+    }
+    
+    public static class This extends Expr {
+        final Token keyword;
+        
+        This(Token keyword) {
+            this.keyword = keyword;
+        }
+        
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitThisExpr(this);
         }
     }
     
