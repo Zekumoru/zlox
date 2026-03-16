@@ -2,7 +2,7 @@ package com.zekumoru.lox;
 
 import java.util.List;
 
-public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
+public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String>, ClassMember.Visitor<String> {
     String print(Expr expr) {
         return expr.accept(this);
     }
@@ -107,16 +107,16 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitClassStmt(Stmt.Class stmt) {
-        return parenthesize("class " + stmt.name.lexeme + " " + classBody(stmt.methods) + " " + classBody(stmt.classMethods));
+        return parenthesize("class " + stmt.name.lexeme + " " + classBody(stmt.members));
     }
 
-    private String classBody(List<Stmt.Function> statements) {
+    private String classBody(List<ClassMember> members) {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("(methods");
-        for (Stmt statement : statements) {
+        builder.append("(members");
+        for (ClassMember member : members) {
             builder.append(" ");
-            builder.append(print(statement));
+            builder.append(member.accept(this));
         }
         builder.append(")");
 
@@ -196,5 +196,21 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         builder.append(")");
 
         return builder.toString();
+    }
+
+    @Override
+    public String visitFieldClassMember(ClassMember.Field member) {
+        if (member.initializer == null) return parenthesize("field " + member.name.lexeme);
+        return parenthesize("field " + member.name.lexeme, member.initializer);
+    }
+
+    @Override
+    public String visitMethodClassMember(ClassMember.Method member) {
+        return visitFunctionStmt(member.method);
+    }
+
+    @Override
+    public String visitGetterClassMember(ClassMember.Getter member) {
+        return visitFunctionStmt(member.method);
     }
 }

@@ -48,18 +48,33 @@ public class Parser {
         Token name = consume(IDENTIFIER, "Expect class name.");
         consume(LEFT_BRACE, "Expect '{' before class body.");
 
-        List<Stmt.Function> classMethods = new ArrayList<>();
-        List<Stmt.Function> methods = new ArrayList<>();
+        List<ClassMember> members = new ArrayList<>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-            if (match(STATIC)) {
-                classMethods.add(function("class method"));
+            boolean isStatic = match(STATIC);
+            Token memberName = consume(IDENTIFIER, "Expect member name.");
+
+            if (check(LEFT_PAREN)) {
+                String kind = isStatic ? "class method" : "method";
+                Expr.Function method = functionExpression(kind);
+                members.add(new ClassMember.Method(new Stmt.Function(memberName, method.params, method.body), isStatic));
+            } else if (match(LEFT_BRACE)) {
+                String kind = isStatic ? "class getter" : "getter";
+                List<Token> params = new ArrayList<>();
+                List<Stmt> body = block();
+                members.add(new ClassMember.Getter(new Stmt.Function(memberName, params,  body), isStatic));
             } else {
-                methods.add(function("method"));
+                Expr initializer = null;
+                if (match(EQUAL))  {
+                    initializer = expression();
+                }
+
+                consume(SEMICOLON, "Expect ';' after field declaration.");
+                members.add(new ClassMember.Field(memberName, initializer, isStatic));
             }
         }
 
         consume(RIGHT_BRACE, "Expect '}' after class body.");
-        return new Stmt.Class(name, methods, classMethods);
+        return new Stmt.Class(name, members);
     }
 
     private Stmt statement() {

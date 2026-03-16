@@ -5,15 +5,15 @@ import java.util.List;
 class LoxFunctionStmt extends LoxFunction {
     private final Stmt.Function declaration;
 
-    LoxFunctionStmt(Stmt.Function declaration, Environment closure, boolean isInitializer) {
-        super(closure, false);
+    LoxFunctionStmt(Stmt.Function declaration, Environment closure, boolean isInitializer, boolean isGetter) {
+        super(closure, isInitializer, isGetter);
         this.declaration = declaration;
     }
 
     LoxFunctionStmt bind(LoxInstance instance) {
         Environment environment = new Environment(closure);
         environment.define(0, instance);
-        return new LoxFunctionStmt(declaration, environment, isInitializer);
+        return new LoxFunctionStmt(declaration, environment, isInitializer, isGetter);
     }
 
     @Override

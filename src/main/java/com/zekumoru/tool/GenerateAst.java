@@ -34,7 +34,7 @@ public class GenerateAst {
         defineAst(outputDir, "Stmt", Arrays.asList(
                 "Empty      : Token token",
                 "Block      : List<Stmt> statements",
-                "Class      : Token name, List<Stmt.Function> methods, List<Stmt.Function> classMethods",
+                "Class      : Token name, List<ClassMember> members",
                 "Expression : Expr expression",
                 "Function   : Token name, List<Token> params, List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
@@ -43,6 +43,12 @@ public class GenerateAst {
                 "Loop       : Expr condition, Expr increment, Stmt body",
                 "Break      : Token keyword",
                 "Continue   : Token keyword"
+        ));
+
+        defineAst(outputDir, "ClassMember", Arrays.asList(
+                "Field  : Token name, Expr initializer, boolean isStatic",
+                "Method : Stmt.Function method, boolean isStatic",
+                "Getter : Stmt.Function method, boolean isStatic"
         ));
     }
 

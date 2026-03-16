@@ -5,14 +5,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
+class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void>, ClassMember.Visitor<Void> {
     private enum FunctionType {
         NONE,
         FUNCTION,
         ANONYMOUS_FUNCTION,
         INITIALIZER,
         METHOD,
-        CLASS_METHOD,
+        CLASS_METHOD, // Static method.
+        GETTER_METHOD,
     }
 
     private enum ClassType {
@@ -45,6 +46,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Stack<Scope> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
     private ClassType currentClass = ClassType.NONE;
+    private Scope classScope = null;
 
     Resolver(Globals globals, Interpreter interpreter) {
         this.globals = globals;
@@ -78,6 +80,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private void resolve(Expr expr) {
         expr.accept(this);
+    }
+
+    private void resolve(ClassMember member) {
+        member.accept(this);
     }
 
     private void beginScope() {
@@ -143,6 +149,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         FunctionType enclosingFunction = currentFunction;
         currentFunction = type;
 
+        if (currentFunction == FunctionType.INITIALIZER) classScope = scopes.peek();
         beginScope();
         for (Token param : params) {
             declare(param);
@@ -150,9 +157,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             initialize(param);
             use(param);
             bind(param);
+            if (classScope != null) classScope.refs.put(param.lexeme, new ScopeRef(param, -1, true, true, true));
         }
         resolveBody(body);
         endScope();
+        classScope = null;
 
         currentFunction = enclosingFunction;
     }
@@ -185,6 +194,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitGetExpr(Expr.Get expr) {
+        for (int i = scopes.size() - 1; i >= 0; i--) {
+            ScopeRef ref = scopes.get(i).refs.get(expr.name.lexeme);
+            if (ref != null) ref.used = true;
+        }
         resolve(expr.object);
         return null;
     }
@@ -211,6 +224,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitSetExpr(Expr.Set expr) {
         resolve(expr.object);
         resolve(expr.value);
+        // Make sure that 'this' variables in the initializer are defined.
+        if (classScope != null) classScope.refs.put(expr.name.lexeme, new ScopeRef(expr.name, -1, true, true, true));
         return null;
     }
 
@@ -309,22 +324,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         Scope scope = scopes.peek();
         scope.refs.put("this", new ScopeRef(null, scope.refs.size(), true, true, true));
 
-        for (Stmt.Function method : stmt.methods) {
-            FunctionType declaration = FunctionType.METHOD;
-            if (method.name.lexeme.equals("init")) {
-                declaration = FunctionType.INITIALIZER;
-            }
-
-            resolveFunction(method, declaration);
-        }
-
-        for (Stmt.Function classMethod : stmt.classMethods) {
-            FunctionType declaration = FunctionType.CLASS_METHOD;
-            if (classMethod.name.lexeme.equals("init")) {
-                Lox.error(classMethod.name, "Can't use initializer as a static method.");
-            }
-
-            resolveFunction(classMethod, declaration);
+        for (ClassMember member : stmt.members) {
+            resolve(member);
         }
 
         endScope();
@@ -403,6 +404,60 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitContinueStmt(Stmt.Continue stmt) {
+        return null;
+    }
+
+    @Override
+    public Void visitFieldClassMember(ClassMember.Field member) {
+        declare(member.name);
+        if (member.initializer != null) {
+            resolve(member.initializer);
+            initialize(member.name);
+        }
+        define(member.name);
+        bind(member.name);
+        return null;
+    }
+
+    @Override
+    public Void visitMethodClassMember(ClassMember.Method member) {
+        FunctionType declaration;
+        Stmt.Function method = member.method;
+
+        if (member.isStatic) {
+            declaration = FunctionType.CLASS_METHOD;
+            if (method.name.lexeme.equals("init")) {
+                Lox.error(method.name, "Can't use initializer as a static method.");
+            }
+        } else {
+            declaration = FunctionType.METHOD;
+            if (method.name.lexeme.equals("init")) {
+                declaration = FunctionType.INITIALIZER;
+            }
+        }
+
+        resolveFunction(method, declaration);
+        return null;
+    }
+
+    @Override
+    public Void visitGetterClassMember(ClassMember.Getter member) {
+        FunctionType declaration;
+        Stmt.Function method = member.method;
+
+        if (member.isStatic) {
+            declaration = FunctionType.CLASS_METHOD;
+            if (method.name.lexeme.equals("init")) {
+                Lox.error(method.name, "Can't use initializer as a static getter.");
+            }
+        } else {
+            declaration = FunctionType.GETTER_METHOD;
+            if (method.name.lexeme.equals("init")) {
+                Lox.error(method.name, "Can't use initializer as a getter.");
+            }
+        }
+
+        resolveFunction(method, declaration);
         return null;
     }
 }

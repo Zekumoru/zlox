@@ -9,11 +9,19 @@ class LoxInstance {
 
     LoxInstance(LoxClass klass) {
         this.klass = klass;
+
+        if (klass instanceof LoxInstance instance) {
+            this.fields.putAll(instance.fields);
+        }
     }
 
     Object get(Token name) {
         if (fields.containsKey(name.lexeme)) {
             return fields.get(name.lexeme);
+        }
+
+        if (this instanceof LoxClass) {
+            return ((LoxClass)this).findMethod(name.lexeme);
         }
 
         LoxFunctionStmt method = klass.findMethod(name.lexeme);

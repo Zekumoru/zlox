@@ -5,9 +5,11 @@ import java.util.List;
 abstract class LoxFunction implements LoxCallable {
     protected final Environment closure;
     protected final boolean isInitializer;
+    protected final boolean isGetter;
 
-    LoxFunction(Environment closure, boolean isInitializer) {
+    LoxFunction(Environment closure, boolean isInitializer, boolean isGetter) {
         this.isInitializer = isInitializer;
+        this.isGetter = isGetter;
         this.closure = closure;
     }
 

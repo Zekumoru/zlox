@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>, ClassMember.Visitor<Object> {
     record BindingRef(int depth, int index) {}
 
     final static Object NO_PRINT = new Object();
@@ -13,6 +13,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Environment globals = new Environment();
     private Environment environment = globals;
     final Map<Token, BindingRef> bindings = new HashMap<>();
+    private boolean inClass = false;
 
     Interpreter(Globals globals) {
         for (Globals.Function function : globals.functions()) {
@@ -162,7 +163,19 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             throw new RuntimeError(expr.name, "Cannot access 'this' in a static method.");
         }
 
-        return ((LoxInstance) object).get(expr.name);
+        Object value;
+        boolean prevInClass = inClass;
+        inClass = true;
+        try {
+            value = ((LoxInstance) object).get(expr.name);
+            if (value instanceof LoxFunctionStmt function && function.isGetter) {
+                value = function.call(this, new ArrayList<>());
+            }
+        } finally {
+            inClass = prevInClass;
+        }
+
+        return value;
     }
 
     @Override
@@ -274,7 +287,19 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Object lookUpVariable(Token name) {
         BindingRef ref = bindings.get(name);
         assert ref != null;
-        return environment.get(ref.depth, ref.index);
+        try {
+            return environment.get(ref.depth, ref.index);
+        } catch (IndexOutOfBoundsException error) {
+            if (inClass) {
+                Object instance = environment.get(ref.depth, 0);
+                if (instance instanceof LoxInstance) {
+                    return ((LoxInstance)instance).get(name);
+                }
+            }
+
+            // If this throws, something is wrong in the interpreter.
+            throw error;
+        }
     }
 
     @Override
@@ -370,22 +395,46 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitClassStmt(Stmt.Class stmt) {
         BindingRef ref = bindings.get(stmt.name);
         assert ref != null;
-        environment.define(ref.depth, null);
-
-        Map<String, LoxFunctionStmt> methods = new HashMap<>();
-        for (Stmt.Function method : stmt.methods) {
-            LoxFunctionStmt function = new LoxFunctionStmt(method, environment, method.name.lexeme.equals("init"));
-            methods.put(method.name.lexeme, function);
-        }
+        environment.define(ref.depth, "Class");
 
         Map<String, LoxFunctionStmt> classMethods = new HashMap<>();
-        for (Stmt.Function classMethod : stmt.classMethods) {
-            LoxFunctionStmt function = new LoxFunctionStmt(classMethod, environment, false);
-            classMethods.put(classMethod.name.lexeme, function);
+        Map<String, LoxFunctionStmt> methods = new HashMap<>();
+        List<ClassMember.Field> classFields = new ArrayList<>();
+        List<ClassMember.Field> fields = new ArrayList<>();
+        for (ClassMember member : stmt.members) {
+            if (member instanceof ClassMember.Field field) {
+                if (field.isStatic) classFields.add(field);
+                else fields.add(field);
+            } else if (member instanceof ClassMember.Method method) {
+                LoxFunctionStmt function = (LoxFunctionStmt)method.accept(this);
+                if (method.isStatic) classMethods.put(method.method.name.lexeme, function);
+                else methods.put(method.method.name.lexeme, function);
+            } else if (member instanceof ClassMember.Getter getter) {
+                LoxFunctionStmt function = (LoxFunctionStmt)getter.accept(this);
+                if (getter.isStatic) classMethods.put(getter.method.name.lexeme, function);
+                else methods.put(getter.method.name.lexeme, function);
+            }
         }
 
         LoxClass metaclass = new LoxClass(null, stmt.name.lexeme + " metaclass", classMethods);
         LoxClass klass = new LoxClass(metaclass, stmt.name.lexeme, methods);
+
+        for (ClassMember.Field field : classFields) {
+            Object value = null;
+            if (field.initializer != null) value = evaluate(field.initializer);
+            metaclass.set(field.name, value);
+
+            BindingRef valueRef = bindings.get(stmt.name);
+            assert valueRef != null;
+            environment.define(valueRef.depth, metaclass);
+        }
+
+        for (ClassMember.Field field : fields) {
+            Object value = null;
+            if (field.initializer != null) value = evaluate(field.initializer);
+            klass.set(field.name, value);
+        }
+
         environment.assign(ref.depth, ref.index, klass);
         return null;
     }
@@ -398,7 +447,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        LoxFunction function = new LoxFunctionStmt(stmt, environment, false);
+        LoxFunction function = new LoxFunctionStmt(stmt, environment, false, false);
         BindingRef ref = bindings.get(stmt.name);
         assert ref != null;
         environment.define(ref.depth, function);
@@ -505,5 +554,21 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         environment.assign(ref.depth, ref.index, newValue);
         return newValue;
+    }
+
+    @Override
+    public Object visitFieldClassMember(ClassMember.Field member) {
+        return null;
+    }
+
+    @Override
+    public Object visitMethodClassMember(ClassMember.Method member) {
+        Stmt.Function method = member.method;
+        return new LoxFunctionStmt(method, environment, method.name.lexeme.equals("init") && !member.isStatic, false);
+    }
+
+    @Override
+    public Object visitGetterClassMember(ClassMember.Getter member) {
+        return new LoxFunctionStmt(member.method, environment, false, true);
     }
 }
